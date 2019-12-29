@@ -1,0 +1,23 @@
+#######################################
+# Syntax Coloring Map For CCS811
+#######################################
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+CCS811	KEYWORD1
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+get_serial_id(unsigned int* serial_id KEYWORD2
+get_mfg_id KEYWORD2
+get_device_id KEYWORD2
+read KEYWORD2
+#######################################
+# Instances (KEYWORD2)
+#######################################
+
+#######################################
+# Constants (LITERAL1)
+#######################################
+# LARGE LITERAL1

@@ -1,0 +1,18 @@
+{
+    "name": "CCS811",
+    "description": "Interfaces with AMS's CCS811 CO2 and TVOC sensor.",
+    "keywords": "I2C, sensor, CO2, TVOC",
+    "authors": [
+        {
+            "name": "Gernot Fattinger",
+            "email": "gernot.fattinger@ilutions.net",
+            "maintainer": true
+        }
+    ],
+
+    "version": "1.0",
+    "frameworks": "Arduino",
+    "examples": [
+        "examples/*/*.ino"
+    ]
+}
