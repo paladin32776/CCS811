@@ -1,84 +1,103 @@
-#include "HDC1080.h"
-#define PRINTBIN(Num) for (uint32_t t = (1UL<< (sizeof(Num)*8)-1); t; t >>= 1) Serial.write(Num  & t ? '1' : '0'); // Prints a binary number with leading zeros (Automatic Handling)
+#include "CCS811.h"
 
-HDC1080::HDC1080()
+CCS811::CCS811(): I2C_COMM(CCS_DEFAULT_ADDRESS)
 {
-  Wire.begin(14,2);
-  addr = 64;
-  delay(20);
-  write_word(HDC_CONFIG, 0b0001000000000000);
+  init();
 }
 
-unsigned char HDC1080::read_byte(unsigned char regbyte)
+CCS811::CCS811(unsigned char _addr): I2C_COMM(_addr)
 {
-  Wire.beginTransmission(addr);
-  Wire.write(byte(regbyte));
-  Wire.endTransmission(false);
-  Wire.requestFrom(addr, (byte)1);
-  unsigned char databyte = Wire.read();
-  return databyte;
+  init();
 }
 
-unsigned int HDC1080::read_word(unsigned char regbyte)
+CCS811::CCS811(unsigned char SDApin, unsigned char SCLpin): I2C_COMM(CCS_DEFAULT_ADDRESS, SDApin, SCLpin)
 {
-  Wire.beginTransmission(addr);
-  Wire.write(byte(regbyte));
-  Wire.endTransmission(false);
-  Wire.requestFrom(addr, (byte)2);
-  unsigned int dataword = 0;
-  while (Wire.available())
-    dataword = (dataword<<8)+Wire.read();
-  return dataword;
+  init();
 }
 
-void HDC1080::write_regbyte(unsigned char regbyte)
+CCS811::CCS811(unsigned char _addr, unsigned char SDApin, unsigned char SCLpin): I2C_COMM(_addr, SDApin, SCLpin)
 {
-  Wire.beginTransmission(addr);         // transmit to device #addr
-  Wire.write(byte(regbyte));            // sends instruction byte
-  Wire.endTransmission();               // stop transmitting
+  init();
 }
 
-void HDC1080::write_byte(unsigned char regbyte, unsigned char databyte)
+void CCS811::init()
 {
-  Wire.beginTransmission(addr);         // transmit to device #addr
-  Wire.write(byte(regbyte));            // sends instruction byte
-  Wire.write(byte(databyte));           // sends value byte
-  Wire.endTransmission();               // stop transmitting
+  unsigned char status = get_status();
+  if ((status & CCS_APP_VALID_MASK) && !(status & CCS_FW_MODE_MASK))
+  {
+    write_regbyte(CSS_APP_START);
+    status = get_status();
+  }
+  if (status & CCS_FW_MODE_MASK)
+  {
+    app_mode = true;
+    set_drive_mode(1);
+    if (get_drive_mode()==1)
+      running = true;
+  }
 }
 
-void HDC1080::write_word(unsigned char regbyte, unsigned int dataword)
+bool CCS811::data_ready()
 {
-  Wire.beginTransmission(addr);         // transmit to device #addr
-  Wire.write(byte(regbyte));            // sends instruction byte
-  Wire.write(byte(dataword>>8));        // sends upper byte
-  Wire.write(byte(dataword & 0xFF));    // sends lower byte
-  Wire.endTransmission();               // stop transmitting
+  return (get_status() & CCS_DATA_READY_MASK)>0;
 }
 
-void HDC1080::read(float* temperature, float* humidity)
+bool CCS811::iserror()
 {
-  write_regbyte(HDC_TEMPERATURE);
-  delay(15);
-  Wire.requestFrom(addr, (byte)4);
-  unsigned int TEMPERATURE = (Wire.read()<<8)+Wire.read();
-  unsigned int HUMIDITY = (Wire.read()<<8)+Wire.read();
-  *temperature = ((float)TEMPERATURE) / 65536.0 * 165.0 - 40.0;
-  *humidity = ((float)HUMIDITY) / 65536.0 * 100.0;
+  return (get_status() & CCS_ERROR_MASK)>0;
 }
 
-void HDC1080::get_serial_id(unsigned int* serial_id)
+unsigned char CCS811::get_status()
 {
-  serial_id[0] = read_word(HDC_SERIALID1);
-  serial_id[1] = read_word(HDC_SERIALID2);
-  serial_id[2] = read_word(HDC_SERIALID3);
+  return read_byte(CCS_STATUS);
 }
 
-unsigned int HDC1080::get_mfg_id()
+void CCS811::set_drive_mode(unsigned int drive_mode)
 {
-  return read_word(HDC_MFGID);
+  meas_mode = (meas_mode & ~CCS_DRIVE_MODE_MASK) | ((drive_mode<<4) & CCS_DRIVE_MODE_MASK);
+  write_byte(CCS_MEAS_MODE, meas_mode);
 }
 
-unsigned int HDC1080::get_device_id()
+unsigned int CCS811::get_drive_mode()
 {
-  return read_word(HDC_DEVICEID);
+  meas_mode = read_byte(CCS_MEAS_MODE);
+  return (meas_mode & CCS_DRIVE_MODE_MASK)>>4;
+}
+
+unsigned char CCS811::get_hw_id()
+{
+  return read_byte(CCS_HW_ID);
+}
+
+unsigned char CCS811::get_hw_version()
+{
+  return read_byte(CCS_HW_VERSION);
+}
+
+unsigned int CCS811::get_fw_boot_version()
+{
+  return read_word(CCS_FW_BOOT_VERSION);
+}
+
+unsigned char CCS811::get_error_id()
+{
+  return read_byte(CCS_ERROR_ID);
+}
+
+void CCS811::read(unsigned int* _CO2, unsigned int* _TVOC)
+{
+  if (app_mode && running && data_ready())
+  {
+    unsigned char data[4];
+    read_multi_bytes(CCS_ALG_RESULT_DATA, 4, data);
+    CO2 = (data[0]<<8) + data[1];
+    TVOC = (data[2]<<8) + data[3];
+  }
+  *_CO2 = CO2;
+  *_TVOC = TVOC;
+}
+
+void CCS811::set_env_data(float T, float RH)
+{
+  
 }

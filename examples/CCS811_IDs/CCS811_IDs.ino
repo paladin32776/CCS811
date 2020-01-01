@@ -1,21 +1,20 @@
-#include "HDC1080.h"
+#include "CCS811.h"
 
-HDC1080 hdc;
+CCS811 ccs;
 
 void setup()
 {
-  Serial.begin(9600);
-  delay(10);
-  Serial.printf("MfgID = %04X  DevID = %04X  ", hdc.get_mfg_id(), hdc.get_device_id());
-  unsigned int serial_id[3];
-  hdc.get_serial_id(serial_id);
-  Serial.printf("Ser = %04X %04X %04X\n", serial_id[0], serial_id[1], serial_id[2]);
+  Serial.begin(115200);
+  delay(50);
 }
+
 
 void loop()
 {
-  float T,RH;
-  hdc.read(&T, &RH);
-  Serial.printf("T = %f  RH = %f\n", T, RH);
+  Serial.printf("HW_ID: 0x%02X  HW_VERSION: 0x%02X\n", ccs.get_hw_id(), ccs.get_hw_version());
+
+  unsigned int CO2, TVOC;
+  ccs.read(&CO2, &TVOC);
+  Serial.printf("CO2 = %d  TVOC = %d\n", CO2, TVOC);
   delay(500);
 }

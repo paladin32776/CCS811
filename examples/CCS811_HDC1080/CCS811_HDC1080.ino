@@ -1,13 +1,14 @@
 #include "CCS811.h"
+#include "HDC1080.h"
 
 CCS811 ccs;
+HDC1080 hdc;
 
 void setup()
 {
   Serial.begin(115200);
   delay(50);
 }
-
 
 void loop()
 {
