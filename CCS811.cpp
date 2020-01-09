@@ -1,4 +1,5 @@
 #include "CCS811.h"
+#define PRINTBIN(Num) for (uint32_t t = (1UL<< (sizeof(Num)*8)-1); t; t >>= 1) Serial.write(Num  & t ? '1' : '0'); // Prints a binary number with leading zeros (Automatic Handling)
 
 CCS811::CCS811(): I2C_COMM(CCS_DEFAULT_ADDRESS)
 {
@@ -99,5 +100,14 @@ void CCS811::read(unsigned int* _CO2, unsigned int* _TVOC)
 
 void CCS811::set_env_data(float T, float RH)
 {
-  
+  unsigned char bytes[4];
+  unsigned int T_int = (unsigned int)((T+25)*512);
+  // Serial.printf("T = %f  T_int = %d (0x%04X)\n", T, T_int , T_int );
+  unsigned int RH_int  = (unsigned int)(RH*512);
+  // Serial.printf("RH = %f  RH_int = %d (0x%04X)\n", RH, RH_int , RH_int);
+  bytes[0] = highByte(RH_int);
+  bytes[1] = lowByte(RH_int);
+  bytes[2] = highByte(T_int);
+  bytes[3] = lowByte(T_int);
+  write_multi_bytes(CCS_ENV_DATA,4,bytes);
 }
