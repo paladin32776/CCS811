@@ -9,7 +9,7 @@ CCS811	KEYWORD1
 #######################################
 # Methods and Functions (KEYWORD2)
 #######################################
-get_serial_id(unsigned int* serial_id KEYWORD2
+get_serial_id KEYWORD2
 get_mfg_id KEYWORD2
 get_device_id KEYWORD2
 read KEYWORD2
